@@ -1,0 +1,513 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>摩爾證券投顧 ｜ 分析師推薦追蹤器</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #0d0f14;
+  --bg2: #151820;
+  --bg3: #1c2030;
+  --border: rgba(255,255,255,0.08);
+  --border2: rgba(255,255,255,0.15);
+  --text: #e8eaf0;
+  --text2: #8b909e;
+  --text3: #555a6a;
+  --green: #22c55e;
+  --green-bg: rgba(34,197,94,0.1);
+  --red: #ef4444;
+  --red-bg: rgba(239,68,68,0.1);
+  --amber: #f59e0b;
+  --amber-bg: rgba(245,158,11,0.1);
+  --blue: #3b82f6;
+  --blue-bg: rgba(59,130,246,0.1);
+  --a1: #60a5fa;
+  --a2: #34d399;
+  --a3: #f97316;
+  --radius: 10px;
+  --radius-sm: 6px;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { background: var(--bg); color: var(--text); font-family: 'Noto Sans TC', sans-serif; font-size: 14px; line-height: 1.6; min-height: 100vh; }
+a { color: inherit; text-decoration: none; }
+
+/* Layout */
+.top-bar { background: var(--bg2); border-bottom: 1px solid var(--border); padding: 0 24px; display: flex; align-items: center; justify-content: space-between; height: 56px; position: sticky; top: 0; z-index: 100; }
+.logo { font-weight: 700; font-size: 15px; letter-spacing: 0.02em; display: flex; align-items: center; gap: 10px; }
+.logo-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--green); box-shadow: 0 0 8px var(--green); animation: pulse 2s infinite; }
+@keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.4} }
+.top-meta { font-size: 12px; color: var(--text2); display: flex; align-items: center; gap: 16px; }
+.update-badge { background: var(--green-bg); color: var(--green); border: 1px solid rgba(34,197,94,0.2); padding: 3px 10px; border-radius: 20px; font-size: 11px; font-family: 'JetBrains Mono', monospace; }
+
+.container { max-width: 1400px; margin: 0 auto; padding: 24px; }
+
+/* Tabs */
+.tabs { display: flex; gap: 2px; background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius); padding: 4px; margin-bottom: 24px; overflow-x: auto; }
+.tab { padding: 7px 18px; border-radius: 7px; cursor: pointer; font-size: 13px; color: var(--text2); border: none; background: none; white-space: nowrap; transition: all 0.15s; }
+.tab:hover { color: var(--text); }
+.tab.active { background: var(--bg3); color: var(--text); font-weight: 500; }
+.sec { display: none; }
+.sec.active { display: block; }
+
+/* Metric cards */
+.metrics { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 24px; }
+@media(max-width:768px){ .metrics{grid-template-columns:repeat(2,1fr);} }
+.mc { background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius); padding: 20px; }
+.mc-label { font-size: 11px; color: var(--text2); text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 8px; }
+.mc-value { font-size: 28px; font-weight: 700; font-family: 'JetBrains Mono', monospace; }
+.mc-sub { font-size: 11px; color: var(--text3); margin-top: 4px; }
+
+/* Cards */
+.card { background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius); padding: 20px; margin-bottom: 16px; }
+.card-title { font-size: 13px; font-weight: 600; color: var(--text2); text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 16px; }
+.grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+@media(max-width:768px){ .grid2{grid-template-columns:1fr;} }
+
+/* Table */
+.tw { overflow-x: auto; }
+table { width: 100%; border-collapse: collapse; font-size: 12px; }
+th { font-size: 10px; font-weight: 600; color: var(--text3); text-transform: uppercase; letter-spacing: 0.06em; padding: 8px 10px; border-bottom: 1px solid var(--border); text-align: left; white-space: nowrap; }
+td { padding: 9px 10px; border-bottom: 1px solid var(--border); color: var(--text); vertical-align: middle; }
+tr:last-child td { border-bottom: none; }
+tr:hover td { background: rgba(255,255,255,0.02); }
+
+/* Badges */
+.badge { display: inline-block; font-size: 10px; padding: 2px 7px; border-radius: 20px; font-weight: 600; white-space: nowrap; }
+.b-buy  { background: var(--green-bg); color: var(--green); border: 1px solid rgba(34,197,94,0.2); }
+.b-sell { background: var(--red-bg);   color: var(--red);   border: 1px solid rgba(239,68,68,0.2); }
+.b-hold { background: var(--amber-bg); color: var(--amber); border: 1px solid rgba(245,158,11,0.2); }
+.b-ok   { background: var(--green-bg); color: var(--green); border: 1px solid rgba(34,197,94,0.2); }
+.b-no   { background: var(--red-bg);   color: var(--red);   border: 1px solid rgba(239,68,68,0.2); }
+.b-pend { background: rgba(255,255,255,0.05); color: var(--text2); border: 1px solid var(--border); }
+
+/* Ana tags */
+.a-tag { display: inline-flex; align-items: center; justify-content: center; width: 20px; height: 20px; border-radius: 50%; font-size: 10px; font-weight: 700; }
+.at1 { background: rgba(96,165,250,0.15); color: var(--a1); }
+.at2 { background: rgba(52,211,153,0.15); color: var(--a2); }
+.at3 { background: rgba(249,115,22,0.15); color: var(--a3); }
+
+/* Up/Down */
+.up { color: var(--red); font-family: 'JetBrains Mono', monospace; font-size: 11px; }
+.dn { color: var(--green); font-family: 'JetBrains Mono', monospace; font-size: 11px; }
+.mono { font-family: 'JetBrains Mono', monospace; font-size: 11px; }
+
+/* Bar chart */
+.bar-row { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; }
+.bar-name { font-size: 12px; width: 80px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; flex-shrink: 0; }
+.bar-track { flex: 1; background: rgba(255,255,255,0.05); border-radius: 4px; height: 8px; overflow: hidden; }
+.bar-fill { height: 8px; border-radius: 4px; transition: width 0.6s cubic-bezier(0.4,0,0.2,1); }
+.bar-pct { font-size: 12px; width: 36px; text-align: right; color: var(--text2); font-family: 'JetBrains Mono', monospace; flex-shrink: 0; }
+
+/* Cross tag */
+.cross-tag { background: var(--green-bg); color: var(--green); border: 1px solid rgba(34,197,94,0.2); font-size: 10px; padding: 2px 7px; border-radius: 20px; font-weight: 600; }
+
+/* Input */
+input[type=number] { background: var(--bg3); border: 1px solid var(--border2); border-radius: var(--radius-sm); color: var(--text); padding: 4px 8px; width: 85px; font-size: 12px; font-family: 'JetBrains Mono', monospace; }
+input[type=number]:focus { outline: none; border-color: var(--blue); }
+
+/* Analyst legend */
+.legend { display: flex; gap: 16px; margin-bottom: 16px; flex-wrap: wrap; }
+.legend-item { display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--text2); }
+
+/* Notice */
+.notice { background: var(--blue-bg); border: 1px solid rgba(59,130,246,0.2); border-radius: var(--radius); padding: 12px 16px; font-size: 12px; color: #93c5fd; margin-bottom: 16px; line-height: 1.7; }
+
+/* Section header */
+.sec-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; }
+.filter-group { display: flex; gap: 6px; }
+.filter-btn { background: var(--bg3); border: 1px solid var(--border); border-radius: var(--radius-sm); color: var(--text2); padding: 4px 10px; font-size: 11px; cursor: pointer; }
+.filter-btn.active { border-color: var(--blue); color: var(--blue); }
+
+/* Footer */
+footer { border-top: 1px solid var(--border); margin-top: 40px; padding: 20px 24px; text-align: center; font-size: 11px; color: var(--text3); }
+
+/* Responsive */
+@media(max-width:600px){
+  .container{padding:12px;}
+  .top-bar{padding:0 12px;}
+  .metrics{grid-template-columns:repeat(2,1fr);}
+}
+</style>
+</head>
+<body>
+
+<div class="top-bar">
+  <div class="logo">
+    <div class="logo-dot"></div>
+    摩爾證券投顧 分析師追蹤器
+  </div>
+  <div class="top-meta">
+    <span id="total-count" style="color:var(--text)">—</span>
+    <span class="update-badge" id="update-date">載入中…</span>
+  </div>
+</div>
+
+<div class="container">
+
+  <div class="tabs">
+    <button class="tab active" onclick="sw('dash')">Dashboard</button>
+    <button class="tab" onclick="sw('picks')">個股清單</button>
+    <button class="tab" onclick="sw('verify')">驗證更新</button>
+    <button class="tab" onclick="sw('rank')">準確率排行</button>
+    <button class="tab" onclick="sw('cross')">三師交叉</button>
+    <button class="tab" onclick="sw('about')">說明</button>
+  </div>
+
+  <!-- DASHBOARD -->
+  <div id="dash" class="sec active">
+    <div class="metrics" id="metrics"></div>
+    <div class="grid2">
+      <div class="card">
+        <div class="card-title">分析師準確率</div>
+        <div class="legend">
+          <div class="legend-item"><span class="a-tag at1">葉</span>葉俊敏</div>
+          <div class="legend-item"><span class="a-tag at2">何</span>何基鼎</div>
+          <div class="legend-item"><span class="a-tag at3">郭</span>郭哲榮</div>
+        </div>
+        <div id="bars"></div>
+      </div>
+      <div class="card">
+        <div class="card-title">最新 10 筆推薦</div>
+        <div class="tw" id="recent"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- PICKS -->
+  <div id="picks" class="sec">
+    <div class="card">
+      <div class="sec-header">
+        <div class="card-title" style="margin:0">所有推薦個股</div>
+        <div class="filter-group" id="ana-filters"></div>
+      </div>
+      <div class="tw">
+        <table>
+          <thead><tr><th>日期</th><th>師</th><th>代號</th><th>名稱</th><th>主題</th><th>方向</th><th>推薦價</th><th>最新現價</th><th>漲跌%</th><th>結果</th></tr></thead>
+          <tbody id="picks-body"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- VERIFY -->
+  <div id="verify" class="sec">
+    <div class="notice">📌 此頁面為公開唯讀，股價更新由管理員每日維護。如需通報最新股價，請聯絡管理員。</div>
+    <div class="card">
+      <div class="card-title">推薦驗證紀錄（最新現價 vs 推薦價）</div>
+      <div class="tw">
+        <table>
+          <thead><tr><th>代號</th><th>名稱</th><th>師</th><th>方向</th><th>推薦價</th><th>現價</th><th>漲跌%</th><th>結果</th></tr></thead>
+          <tbody id="verify-body"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- RANK -->
+  <div id="rank" class="sec">
+    <div class="card">
+      <div class="card-title">準確率排行榜</div>
+      <div class="notice">📊 判斷標準：買入推薦→現價高於推薦價=正確；賣出推薦→現價低於推薦價=正確；觀察/持有→不納入計算</div>
+      <div class="tw">
+        <table>
+          <thead><tr><th>排名</th><th>分析師</th><th>總筆數</th><th>正確</th><th>錯誤</th><th>待驗證</th><th>準確率</th></tr></thead>
+          <tbody id="rank-body"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- CROSS -->
+  <div id="cross" class="sec">
+    <div class="card">
+      <div class="card-title">三師交叉推薦</div>
+      <div class="notice">⭐ 被兩位以上分析師同時看好（買入）的個股，多方共識較強，供參考。</div>
+      <div class="tw">
+        <table>
+          <thead><tr><th>代號</th><th>名稱</th><th>主題</th><th>共識</th><th>推薦師</th><th>現價</th><th>平均漲跌</th><th>結果</th></tr></thead>
+          <tbody id="cross-body"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- ABOUT -->
+  <div id="about" class="sec">
+    <div class="card">
+      <div class="card-title">關於此追蹤器</div>
+      <div style="color:var(--text2);line-height:2;font-size:13px">
+        <p>📺 <strong style="color:var(--text)">資料來源</strong>：摩爾證券投顧 YouTube 頻道每日節目字幕</p>
+        <p>👥 <strong style="color:var(--text)">追蹤對象</strong>：葉俊敏、何基鼎、郭哲榮 三位分析師</p>
+        <p>📅 <strong style="color:var(--text)">更新頻率</strong>：每個交易日收盤後更新</p>
+        <p>📊 <strong style="color:var(--text)">準確率計算</strong>：買入→現價高於推薦價=正確；賣出→現價低=正確；觀察不計入</p>
+        <br>
+        <p style="color:var(--text3);font-size:12px">⚠️ 本追蹤器僅供個人研究參考，不構成任何投資建議。投資有風險，請自行判斷。</p>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<footer>摩爾證券投顧分析師追蹤器 ｜ 資料僅供參考，不構成投資建議 ｜ 更新時間：<span id="footer-date"></span></footer>
+
+<!-- ===================== DATA ===================== -->
+<script>
+// ======================================================
+// 📌 每日更新區塊 — 只需修改這裡的數字
+// ======================================================
+const LAST_UPDATE = '2026-06-02';
+
+const PRICES = {
+  '2317':301.5, '2382':400.5, '3443':4535, '6669':5475, '2376':390.5,
+  '2357':920,   '6805':2190,  '2383':4860, '3515':273.5,'2408':419.5,
+  '6770':85.9,  '2433':43.8,  '3016':118.5,'6451':659,  '3450':548,
+  '2455':399,   '2454':4525,  '3661':4575, '2354':64,   '3231':191,
+  '6531':1075,  '2328':61.7,  '3691':159,  '3081':2575, '3707':81.9,
+  '4991':702,   '3532':315.5, '8358':627,  '6274':1590, '6488':940,
+  '6799':104.5, '4977':212.5, '4989':100,  '2330':2355, '3481':51,
+  '6261':305,   '2381':310,   '3711':195,  '2313':284.5,'2324':199,
+  '2356':89,    '8299':650,   '5347':null, '6196':null, '3374':null,
+  '3037':1020,  '2449':null,  '3009':null, '2439':null, '2303':null,
+};
+// ======================================================
+
+const A1='葉俊敏', A2='何基鼎', A3='郭哲榮';
+const ANA_FULL = {
+  '葉俊敏':'葉俊敏分析師－摩爾證券投顧',
+  '何基鼎':'何基鼎分析師－摩爾證券投顧',
+  '郭哲榮':'郭哲榮分析師－摩爾證券投顧',
+};
+
+const PICKS = [
+  // 葉俊敏 20260529
+  {t:'6669',n:'緯穎',    a:'buy', rec:5445, ana:A1,theme:'AI伺服器'},
+  {t:'2376',n:'技嘉',    a:'buy', rec:370,  ana:A1,theme:'AI伺服器'},
+  {t:'6805',n:'富世達',  a:'buy', rec:1930, ana:A1,theme:'鴻家軍'},
+  {t:'2383',n:'台光電',  a:'buy', rec:5120, ana:A1,theme:'材料升級'},
+  {t:'6274',n:'台燿',    a:'buy', rec:1690, ana:A1,theme:'材料升級'},
+  {t:'8358',n:'金居',    a:'buy', rec:608,  ana:A1,theme:'材料升級'},
+  {t:'4989',n:'榮科',    a:'buy', rec:107,  ana:A1,theme:'材料升級'},
+  {t:'3515',n:'華邦電',  a:'buy', rec:242,  ana:A1,theme:'記憶體'},
+  {t:'2408',n:'南亞科',  a:'buy', rec:347,  ana:A1,theme:'記憶體'},
+  {t:'6770',n:'力積電',  a:'buy', rec:88.7, ana:A1,theme:'記憶體'},
+  {t:'6488',n:'環球晶',  a:'buy', rec:1020, ana:A1,theme:'矽晶圓'},
+  {t:'3016',n:'嘉晶',    a:'buy', rec:138,  ana:A1,theme:'矽晶圓'},
+  {t:'6451',n:'訊芯-KY', a:'buy', rec:570,  ana:A1,theme:'CPO'},
+  {t:'3450',n:'聯鈞',    a:'buy', rec:490.5,ana:A1,theme:'CPO'},
+  {t:'2455',n:'全新',    a:'buy', rec:422,  ana:A1,theme:'CPO'},
+  {t:'3443',n:'創意',    a:'buy', rec:4670, ana:A1,theme:'ASIC'},
+  {t:'6531',n:'愛普',    a:'buy', rec:null, ana:A1,theme:'ASIC'},
+  {t:'2328',n:'廣宇',    a:'buy', rec:null, ana:A1,theme:'AI機器人'},
+  {t:'3691',n:'碩禾',    a:'buy', rec:null, ana:A1,theme:'散熱'},
+  {t:'2317',n:'鴻海',    a:'hold',rec:289,  ana:A1,theme:'AI伺服器'},
+  {t:'2382',n:'廣達',    a:'hold',rec:339,  ana:A1,theme:'AI伺服器'},
+  {t:'3231',n:'緯創',    a:'hold',rec:158.5,ana:A1,theme:'AI伺服器'},
+  {t:'2354',n:'鴻準',    a:'hold',rec:60.9, ana:A1,theme:'鴻家軍'},
+  {t:'2433',n:'旺宏',    a:'hold',rec:43.4, ana:A1,theme:'記憶體'},
+  {t:'3532',n:'台勝科',  a:'hold',rec:319,  ana:A1,theme:'矽晶圓'},
+  {t:'3707',n:'漢磊',    a:'hold',rec:null, ana:A1,theme:'矽晶圓'},
+  {t:'4991',n:'環宇-KY', a:'hold',rec:null, ana:A1,theme:'CPO'},
+  {t:'2454',n:'聯發科',  a:'hold',rec:4310, ana:A1,theme:'ASIC'},
+  {t:'6799',n:'昇達科',  a:'hold',rec:2200, ana:A1,theme:'低軌衛星'},
+  {t:'4977',n:'啟碁',    a:'hold',rec:336,  ana:A1,theme:'低軌衛星'},
+  {t:'2357',n:'華碩',    a:'hold',rec:761,  ana:A1,theme:'AI伺服器'},
+  {t:'3661',n:'世芯-KY', a:'sell',rec:4415, ana:A1,theme:'ASIC'},
+  {t:'3081',n:'聯亞',    a:'sell',rec:null, ana:A1,theme:'CPO'},
+  // 何基鼎 20260529
+  {t:'2317',n:'鴻海',    a:'buy', rec:289,  ana:A2,theme:'老AI'},
+  {t:'2382',n:'廣達',    a:'buy', rec:339,  ana:A2,theme:'老AI'},
+  {t:'3231',n:'緯創',    a:'buy', rec:158.5,ana:A2,theme:'老AI'},
+  {t:'6669',n:'緯穎',    a:'buy', rec:5445, ana:A2,theme:'老AI'},
+  {t:'2357',n:'華碩',    a:'buy', rec:761,  ana:A2,theme:'老AI'},
+  {t:'3481',n:'群創',    a:'buy', rec:37.9, ana:A2,theme:'面板扇出封裝'},
+  {t:'6261',n:'頎邦',    a:'buy', rec:199,  ana:A2,theme:'封測'},
+  {t:'2381',n:'南茂',    a:'buy', rec:null, ana:A2,theme:'封測'},
+  {t:'3711',n:'日月光',  a:'buy', rec:null, ana:A2,theme:'封測'},
+  {t:'6799',n:'昇達科',  a:'buy', rec:1890, ana:A2,theme:'低軌衛星'},
+  {t:'2313',n:'華通',    a:'buy', rec:null, ana:A2,theme:'低軌衛星'},
+  {t:'3515',n:'華邦電',  a:'buy', rec:242,  ana:A2,theme:'記憶體'},
+  {t:'2408',n:'南亞科',  a:'buy', rec:347,  ana:A2,theme:'記憶體'},
+  {t:'6770',n:'力積電',  a:'buy', rec:62.3, ana:A2,theme:'記憶體'},
+  {t:'6531',n:'愛普',    a:'buy', rec:null, ana:A2,theme:'矽電容'},
+  {t:'2383',n:'台光電',  a:'buy', rec:5120, ana:A2,theme:'CCL'},
+  {t:'6274',n:'台燿',    a:'buy', rec:1690, ana:A2,theme:'CCL'},
+  {t:'2330',n:'台積電',  a:'buy', rec:2330, ana:A2,theme:'權值'},
+  {t:'2454',n:'聯發科',  a:'sell',rec:4310, ana:A2,theme:'ASIC'},
+  {t:'2303',n:'國巨',    a:'sell',rec:324,  ana:A2,theme:'被動元件'},
+  {t:'2433',n:'旺宏',    a:'hold',rec:43.4, ana:A2,theme:'記憶體'},
+  // 郭哲榮 20260529
+  {t:'2317',n:'鴻海',    a:'buy', rec:289,  ana:A3,theme:'老AI/權值'},
+  {t:'6488',n:'環球晶',  a:'buy', rec:500,  ana:A3,theme:'矽晶圓'},
+  {t:'2376',n:'技嘉',    a:'buy', rec:370,  ana:A3,theme:'AI伺服器'},
+  {t:'3231',n:'緯創',    a:'buy', rec:158.5,ana:A3,theme:'老AI'},
+  {t:'2324',n:'仁寶',    a:'buy', rec:null, ana:A3,theme:'老AI'},
+  {t:'2356',n:'英業達',  a:'buy', rec:null, ana:A3,theme:'AI伺服器'},
+  {t:'2408',n:'南亞科',  a:'buy', rec:347,  ana:A3,theme:'記憶體'},
+  {t:'8299',n:'群聯',    a:'buy', rec:null, ana:A3,theme:'記憶體'},
+  {t:'5347',n:'世界先進',a:'buy', rec:null, ana:A3,theme:'成熟製程'},
+  {t:'3481',n:'群創',    a:'buy', rec:37.9, ana:A3,theme:'面板扇出封裝'},
+  {t:'6196',n:'帆宣',    a:'buy', rec:null, ana:A3,theme:'設備'},
+  {t:'3374',n:'精材',    a:'buy', rec:null, ana:A3,theme:'設備/封裝'},
+  {t:'2330',n:'台積電',  a:'buy', rec:2330, ana:A3,theme:'權值'},
+  {t:'2382',n:'廣達',    a:'sell',rec:339,  ana:A3,theme:'老AI'},
+  {t:'2454',n:'聯發科',  a:'sell',rec:4310, ana:A3,theme:'ASIC'},
+  {t:'3037',n:'欣興',    a:'hold',rec:null, ana:A3,theme:'ABF載板'},
+];
+
+// ---- 計算 ----
+function calcR(a,rec,cur){ if(!rec||!cur)return'pending'; if(a==='buy')return cur>rec?'correct':'wrong'; if(a==='sell')return cur<rec?'correct':'wrong'; return'pending'; }
+function pct(rec,cur){ if(!rec||!cur)return null; return((cur-rec)/rec*100); }
+function pctHtml(rec,cur){ const v=pct(rec,cur); if(v===null)return'<span style="color:var(--text3)">—</span>'; const up=v>=0; return`<span class="${up?'up':'dn'}">${up?'+':''}${v.toFixed(1)}%</span>`; }
+function rBadge(r){ return r==='correct'?'<span class="badge b-ok">✓ 正確</span>':r==='wrong'?'<span class="badge b-no">✗ 錯誤</span>':'<span class="badge b-pend">待驗</span>'; }
+function aBadge(a){ return a==='buy'?'<span class="badge b-buy">買入</span>':a==='sell'?'<span class="badge b-sell">賣出</span>':'<span class="badge b-hold">觀察</span>'; }
+function anaTag(ana){ const cls={[A1]:'at1',[A2]:'at2',[A3]:'at3'}; const s={[A1]:'葉',[A2]:'何',[A3]:'郭'}; return`<span class="a-tag ${cls[ana]}">${s[ana]}</span>`; }
+
+// 補入現價
+const DATA = PICKS.map((p,i)=>({
+  ...p, id:i, cur: PRICES[p.t]||null,
+  result: calcR(p.a, p.rec, PRICES[p.t])
+}));
+
+// 統計
+function getStats(){
+  const stats={[A1]:{t:0,ok:0,no:0,pend:0},[A2]:{t:0,ok:0,no:0,pend:0},[A3]:{t:0,ok:0,no:0,pend:0}};
+  DATA.forEach(p=>{ if(!stats[p.ana])return; stats[p.ana].t++; if(p.result==='correct')stats[p.ana].ok++; else if(p.result==='wrong')stats[p.ana].no++; else stats[p.ana].pend++; });
+  return stats;
+}
+
+let activeFilter='all';
+function sw(t){
+  document.querySelectorAll('.tab').forEach((el,i)=>el.classList.toggle('active',['dash','picks','verify','rank','cross','about'][i]===t));
+  document.querySelectorAll('.sec').forEach(el=>el.classList.remove('active'));
+  document.getElementById(t).classList.add('active');
+}
+
+function render(){
+  // Header
+  document.getElementById('update-date').textContent='更新：'+LAST_UPDATE;
+  document.getElementById('footer-date').textContent=LAST_UPDATE;
+  document.getElementById('total-count').textContent=DATA.length+' 筆推薦';
+
+  // Metrics
+  const total=DATA.length;
+  const correct=DATA.filter(p=>p.result==='correct').length;
+  const wrong=DATA.filter(p=>p.result==='wrong').length;
+  const pending=DATA.filter(p=>p.result==='pending').length;
+  const verified=total-pending;
+  const acc=verified>0?Math.round(correct/verified*100)+'%':'—';
+  document.getElementById('metrics').innerHTML=`
+    <div class="mc"><div class="mc-label">總推薦筆數</div><div class="mc-value" style="color:var(--blue)">${total}</div><div class="mc-sub">三位分析師 20260529</div></div>
+    <div class="mc"><div class="mc-label">整體準確率</div><div class="mc-value" style="color:${verified>0&&correct/verified>=0.5?'var(--green)':'var(--amber)'}">${acc}</div><div class="mc-sub">${verified} 筆已驗證</div></div>
+    <div class="mc"><div class="mc-label">正確筆數</div><div class="mc-value" style="color:var(--green)">${correct}</div><div class="mc-sub">${wrong} 筆錯誤</div></div>
+    <div class="mc"><div class="mc-label">待驗證</div><div class="mc-value" style="color:var(--text2)">${pending}</div><div class="mc-sub">尚未有現價</div></div>`;
+
+  // Bars
+  const stats=getStats();
+  document.getElementById('bars').innerHTML=Object.entries(stats).map(([name,s])=>{
+    const v=s.t-s.pend, rate=v>0?Math.round(s.ok/v*100):0;
+    const color=rate>=60?'var(--green)':rate>=40?'var(--amber)':'var(--red)';
+    const fullName=ANA_FULL[name];
+    return`<div class="bar-row">
+      <div class="bar-name" title="${fullName}">${name}</div>
+      <div class="bar-track"><div class="bar-fill" style="width:${v>0?rate:0}%;background:${color}"></div></div>
+      <div class="bar-pct">${v>0?rate+'%':'—'}</div>
+    </div>
+    <div style="font-size:11px;color:var(--text3);margin:-6px 0 10px 90px">✓${s.ok} ✗${s.no} 待${s.pend}（共${s.t}筆）</div>`;
+  }).join('');
+
+  // Recent
+  document.getElementById('recent').innerHTML=`<table><tbody>${[...DATA].reverse().slice(0,10).map(p=>`<tr>
+    <td>${anaTag(p.ana)}</td>
+    <td style="font-weight:600">${p.t}</td>
+    <td>${p.n}</td>
+    <td>${aBadge(p.a)}</td>
+    <td>${rBadge(p.result)}</td>
+  </tr>`).join('')}</tbody></table>`;
+
+  // Picks
+  const filtered = activeFilter==='all' ? DATA : DATA.filter(p=>p.ana===activeFilter);
+  document.getElementById('picks-body').innerHTML=filtered.map(p=>`<tr>
+    <td class="mono">2026-05-29</td>
+    <td>${anaTag(p.ana)}</td>
+    <td style="font-weight:600">${p.t}</td>
+    <td>${p.n}</td>
+    <td style="color:var(--text3);font-size:11px">${p.theme}</td>
+    <td>${aBadge(p.a)}</td>
+    <td class="mono">${p.rec?'$'+p.rec:'—'}</td>
+    <td class="mono">${p.cur?'$'+p.cur:'—'}</td>
+    <td>${pctHtml(p.rec,p.cur)}</td>
+    <td>${rBadge(p.result)}</td>
+  </tr>`).join('');
+
+  // Ana filters
+  document.getElementById('ana-filters').innerHTML=
+    ['all',A1,A2,A3].map(f=>`<button class="filter-btn ${activeFilter===f?'active':''}" onclick="setFilter('${f}')">${f==='all'?'全部':f}</button>`).join('');
+
+  // Verify
+  document.getElementById('verify-body').innerHTML=DATA.map(p=>`<tr>
+    <td style="font-weight:600">${p.t}</td>
+    <td>${p.n}</td>
+    <td>${anaTag(p.ana)}</td>
+    <td>${aBadge(p.a)}</td>
+    <td class="mono">${p.rec?'$'+p.rec:'—'}</td>
+    <td class="mono" style="color:var(--text)">${p.cur?'$'+p.cur:'—'}</td>
+    <td>${pctHtml(p.rec,p.cur)}</td>
+    <td>${rBadge(p.result)}</td>
+  </tr>`).join('');
+
+  // Rank
+  const rankRows=Object.entries(stats).sort((a,b)=>{
+    const av=a[1].t-a[1].pend, bv=b[1].t-b[1].pend;
+    return(bv>0?b[1].ok/bv:0)-(av>0?a[1].ok/av:0);
+  });
+  document.getElementById('rank-body').innerHTML=rankRows.map(([name,s],i)=>{
+    const v=s.t-s.pend, acc=v>0?Math.round(s.ok/v*100)+'%':'—';
+    const medal=['🥇','🥈','🥉'][i]||'';
+    return`<tr>
+      <td>${medal} ${i+1}</td>
+      <td>${anaTag(name)} <span style="margin-left:6px">${ANA_FULL[name]}</span></td>
+      <td class="mono">${s.t}</td>
+      <td class="mono" style="color:var(--green)">${s.ok}</td>
+      <td class="mono" style="color:var(--red)">${s.no}</td>
+      <td class="mono" style="color:var(--text2)">${s.pend}</td>
+      <td><strong style="font-size:16px;font-family:'JetBrains Mono',monospace;color:${v>0&&s.ok/v>=0.5?'var(--green)':'var(--amber)'}">${acc}</strong></td>
+    </tr>`;
+  }).join('');
+
+  // Cross
+  const crossMap={};
+  DATA.filter(p=>p.a==='buy').forEach(p=>{
+    if(!crossMap[p.t]) crossMap[p.t]={n:p.n,theme:p.theme,anas:[],recs:[],cur:p.cur};
+    if(!crossMap[p.t].anas.includes(p.ana)){
+      crossMap[p.t].anas.push(p.ana);
+      if(p.rec) crossMap[p.t].recs.push(p.rec);
+    }
+    if(p.cur) crossMap[p.t].cur=p.cur;
+  });
+  const crossRows=Object.entries(crossMap).filter(([,v])=>v.anas.length>=2)
+    .sort((a,b)=>b[1].anas.length-a[1].anas.length||(pct(b[1].recs[0],b[1].cur)||0)-(pct(a[1].recs[0],a[1].cur)||0));
+  document.getElementById('cross-body').innerHTML=crossRows.map(([t,v])=>{
+    const avgRec=v.recs.length?v.recs.reduce((a,b)=>a+b,0)/v.recs.length:null;
+    const results=v.anas.map(()=>calcR('buy',avgRec,v.cur));
+    const allOk=results.every(r=>r==='correct'), allNo=results.every(r=>r==='wrong');
+    return`<tr>
+      <td style="font-weight:600">${t}</td>
+      <td>${v.n}</td>
+      <td style="color:var(--text3);font-size:11px">${v.theme}</td>
+      <td><span class="cross-tag">${v.anas.length}人</span></td>
+      <td>${v.anas.map(a=>anaTag(a)).join('')}</td>
+      <td class="mono">${v.cur?'$'+v.cur:'—'}</td>
+      <td>${avgRec?pctHtml(avgRec,v.cur):'—'}</td>
+      <td>${allOk?'<span class="badge b-ok">✓ 正確</span>':allNo?'<span class="badge b-no">✗ 錯誤</span>':'<span class="badge b-pend">混合</span>'}</td>
+    </tr>`;
+  }).join('');
+}
+
+function setFilter(f){ activeFilter=f; render(); }
+
+render();
+</script>
+</body>
+</html>
