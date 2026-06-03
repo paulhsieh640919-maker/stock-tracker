@@ -169,7 +169,7 @@ footer { border-top: 1px solid var(--border); margin-top: 40px; padding: 20px 24
         <div id="bars"></div>
       </div>
       <div class="card">
-        <div class="card-title">最新 10 筆推薦</div>
+        <div class="card-title">🏆 獲利率排行（正確推薦 Top 10）</div>
         <div class="tw" id="recent"></div>
       </div>
     </div>
@@ -417,14 +417,32 @@ function render(){
     <div style="font-size:11px;color:var(--text3);margin:-6px 0 10px 90px">✓${s.ok} ✗${s.no} 待${s.pend}（共${s.t}筆）</div>`;
   }).join('');
 
-  // Recent
-  document.getElementById('recent').innerHTML=`<table><tbody>${[...DATA].reverse().slice(0,10).map(p=>`<tr>
-    <td>${anaTag(p.ana)}</td>
-    <td style="font-weight:600">${p.t}</td>
-    <td>${p.n}</td>
-    <td>${aBadge(p.a)}</td>
-    <td>${rBadge(p.result)}</td>
-  </tr>`).join('')}</tbody></table>`;
+  // 獲利率排行：只取 correct 的推薦，依漲跌% 由高到低，同代號合併顯示所有推薦師
+  const correctPicks = DATA.filter(p => p.result === 'correct' && p.rec && p.cur);
+  // 以代號分組，合併分析師標籤，取該組最高漲幅
+  const grouped = {};
+  correctPicks.forEach(p => {
+    const v = pct(p.rec, p.cur);
+    if (!grouped[p.t]) grouped[p.t] = { p, v, anas: [p.ana] };
+    else {
+      if (!grouped[p.t].anas.includes(p.ana)) grouped[p.t].anas.push(p.ana);
+      if (v > grouped[p.t].v) { grouped[p.t].v = v; grouped[p.t].p = p; }
+    }
+  });
+  const topRows = Object.values(grouped)
+    .sort((a, b) => b.v - a.v)
+    .slice(0, 10);
+  document.getElementById('recent').innerHTML = topRows.length ? `<table>
+    <thead><tr><th>排名</th><th>代號</th><th>名稱</th><th>推薦師</th><th>方向</th><th>漲幅</th></tr></thead>
+    <tbody>${topRows.map(({ p, v, anas }, i) => `<tr>
+      <td style="font-weight:700;color:var(--text3)">#${i+1}</td>
+      <td style="font-weight:600">${p.t}</td>
+      <td>${p.n}</td>
+      <td style="white-space:nowrap">${anas.map(a => anaTag(a)).join(' ')}</td>
+      <td>${aBadge(p.a)}</td>
+      <td class="up" style="font-weight:700">+${v.toFixed(1)}%</td>
+    </tr>`).join('')}</tbody>
+  </table>` : '<div style="color:var(--text3);padding:16px">尚無已驗證的正確推薦</div>';
 
   // Picks
   const filtered = activeFilter==='all' ? DATA : DATA.filter(p=>p.ana===activeFilter);
