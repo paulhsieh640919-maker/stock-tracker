@@ -27,7 +27,7 @@ STOCK_CODES = [
     '2356','8299','5347','6196','3374','3037','2449','3009','2439','2303',
 ]
 
-INDEX_HTML = '/Users/xiezhikai/Desktop/stock-tracker/index.html'
+INDEX_HTML = './index.html'
 
 HEADERS = {
     'User-Agent': (
@@ -191,7 +191,7 @@ def git_push(today_str: str):
         ['git', 'commit', '-m', f'更新股價 {today_str}'],
         ['git', 'push'],
     ]
-    cwd = '/Users/xiezhikai/Desktop/stock-tracker'
+    cwd = '.'
     for cmd in cmds:
         print(f'\n$ {" ".join(cmd)}')
         result = subprocess.run(cmd, cwd=cwd, capture_output=True, text=True)
