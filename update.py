@@ -104,7 +104,7 @@ def yfinance_close(stock_no: str) -> Optional[float]:
 
 
 def fetch_all_prices() -> Dict[str, Optional[float]]:
-    """抓股價順序：cnyes → TWSE API → Yahoo Finance（三層備用）"""
+    """抓股價順序：Yahoo Finance → cnyes → TWSE API"""
     today = datetime.today()
     date_candidates = [
         (today - timedelta(days=i)).strftime('%Y%m%d')
@@ -114,12 +114,17 @@ def fetch_all_prices() -> Dict[str, Optional[float]]:
     prices: Dict[str, Optional[float]] = {}
 
     for code in STOCK_CODES:
-        source = 'cnyes'
-        # 第一優先：cnyes
-        price = cnyes_close(code)
-        time.sleep(0.4)
+        # 第一優先：Yahoo Finance
+        source = 'Yahoo'
+        price = yfinance_close(code)
 
-        # 第二優先：TWSE API
+        # 第二優先：cnyes
+        if price is None:
+            source = 'cnyes'
+            price = cnyes_close(code)
+            time.sleep(0.4)
+
+        # 第三優先：TWSE API
         if price is None:
             source = 'TWSE'
             for date_str in date_candidates[:3]:
@@ -127,12 +132,6 @@ def fetch_all_prices() -> Dict[str, Optional[float]]:
                 if price is not None:
                     break
                 time.sleep(0.3)
-
-        # 第三優先：Yahoo Finance（Google Finance 同源）
-        if price is None:
-            source = 'Yahoo'
-            price = yfinance_close(code)
-            time.sleep(0.3)
 
         if price is not None:
             print(f'  {code}: {price}  [{source}]')
@@ -189,7 +188,7 @@ def git_push(today_str: str):
     cmds = [
         ['git', 'add', 'index.html'],
         ['git', 'commit', '-m', f'更新股價 {today_str}'],
-        ['git', 'push'],
+        ['git', 'push', 'origin', 'HEAD:main'],
     ]
     cwd = '.'
     for cmd in cmds:
