@@ -185,12 +185,15 @@ def update_html(prices: Dict[str, Optional[float]], today_str: str):
 
 def git_push(today_str: str):
     """git add / commit / push"""
+    import os
+    cwd = os.path.dirname(os.path.abspath(__file__))
+
     cmds = [
+        ['git', 'pull', 'origin', 'main', '--rebase'],
         ['git', 'add', 'index.html'],
         ['git', 'commit', '-m', f'更新股價 {today_str}'],
         ['git', 'push', 'origin', 'HEAD:main'],
     ]
-    cwd = '.'
     for cmd in cmds:
         print(f'\n$ {" ".join(cmd)}')
         result = subprocess.run(cmd, cwd=cwd, capture_output=True, text=True)
