@@ -216,7 +216,10 @@ def main():
     print(f'\n共抓到 {found}/{len(prices)} 支股票的收盤價')
 
     update_html(prices, today_str)
-    git_push(today_str)
+
+    import os
+    if not os.environ.get('CI'):
+        git_push(today_str)
 
     print('\n完成！')
 
