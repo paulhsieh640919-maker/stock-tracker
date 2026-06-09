@@ -215,6 +215,10 @@ def main():
     found = sum(1 for v in prices.values() if v is not None)
     print(f'\n共抓到 {found}/{len(prices)} 支股票的收盤價')
 
+    if found < 5:
+        print(f'抓到的股價數量過少（{found} 檔），略過更新以保護現有資料。')
+        return
+
     update_html(prices, today_str)
 
     import os
